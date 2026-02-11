@@ -2,23 +2,40 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Forwarding Invoice App - With History</title>
+    <title>GoAhead Invoice App</title>
     <style>
-        :root { --primary: #0056b3; --success: #28a745; }
+        :root { --primary: #0056b3; --success: #28a745; --warning: #ff9800; }
         body { font-family: 'Segoe UI', sans-serif; background: #eef2f3; padding: 20px; }
-        .toolbar { background: #333; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 10px; justify-content: center; position: sticky; top: 10px; z-index: 1000; }
-        .btn { padding: 10px 20px; border: none; border-radius: 4px; color: white; cursor: pointer; font-weight: bold; }
+        
+        /* काली पट्टी (Toolbar) */
+        .toolbar { 
+            background: #333; 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin-bottom: 20px; 
+            display: flex; 
+            gap: 15px; 
+            justify-content: center; 
+            position: sticky; 
+            top: 0; 
+            z-index: 1000;
+        }
+
+        .btn { padding: 12px 25px; border: none; border-radius: 5px; color: white; cursor: pointer; font-weight: bold; font-size: 15px; transition: 0.3s; }
         .btn-add { background: var(--primary); }
-        .btn-save { background: #ff9800; }
+        .btn-save { background: var(--warning); } /* नारंगी बटन */
         .btn-print { background: var(--success); }
-        
-        .invoice-card { background: white; padding: 40px; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-        .history-section { margin-top: 30px; background: #fff; padding: 20px; border-radius: 8px; border: 1px solid #ddd; }
-        
-        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-        th { background: var(--primary); color: white; padding: 12px; }
-        td { padding: 10px; border-bottom: 1px solid #eee; }
-        input { width: 90%; padding: 8px; border: 1px solid #ddd; }
+
+        .invoice-card { background: white; padding: 40px; border-radius: 5px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); max-width: 900px; margin: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { background: #0056b3; color: white; padding: 10px; }
+        td { padding: 10px; border-bottom: 1px solid #ddd; }
+        input { width: 90%; padding: 5px; border: 1px solid #ccc; }
+
+        /* हिस्ट्री सेक्शन */
+        .history-section { max-width: 900px; margin: 30px auto; background: white; padding: 20px; border-radius: 5px; border: 1px solid #ddd; }
+        .history-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .history-table th { background: #555; }
 
         @media print { .toolbar, .history-section, .btn-del { display: none !important; } }
     </style>
@@ -27,44 +44,44 @@
 
 <div class="toolbar">
     <button class="btn btn-add" onclick="addRow()">+ Add New Service</button>
-    <button class="btn btn-save" onclick="saveInvoice()" style="background: #ff9800;">💾 Save to History</button>
+    <button class="btn btn-save" onclick="saveToHistory()">💾 Save to History</button>
     <button class="btn btn-print" onclick="window.print()">Print / Save PDF</button>
 </div>
 
 <div class="invoice-card">
-    <h2 contenteditable="true" id="compName">YOUR COMPANY NAME</h2>
+    <h1 contenteditable="true" id="compName">GOAHEAD LOGISTICS</h1>
     <div style="display:flex; justify-content:space-between;">
-        <div contenteditable="true" id="clientDetails">Bill To: Client Name</div>
+        <div contenteditable="true">Bill To: Client Name<br>Address Details</div>
         <div>
             Date: <input type="date" id="invDate"><br>
-            Inv #: <input type="text" id="invNum" value="101">
+            Invoice #: <input type="text" id="invNum" value="INV-101">
         </div>
     </div>
 
     <table>
         <thead>
-            <tr><th>Description</th><th>Amount</th><th></th></tr>
+            <tr><th>Description</th><th>Amount (₹)</th><th class="btn-del"></th></tr>
         </thead>
         <tbody id="tbody">
             <tr>
-                <td><input type="text" class="desc" value="Freight"></td>
+                <td><input type="text" value="Freight Charges"></td>
                 <td><input type="number" class="amt" value="0" oninput="calc()"></td>
                 <td class="btn-del"><button onclick="this.parentElement.parentElement.remove();calc()">✖</button></td>
             </tr>
         </tbody>
     </table>
-    <h3 style="text-align:right;">Total: ₹<span id="grand">0.00</span></h3>
+    <h2 style="text-align:right;">Total: ₹<span id="grand">0.00</span></h2>
 </div>
 
 <div class="history-section">
-    <h3>Previous Invoices (Saved Records)</h3>
-    <table border="1" style="background:#f9f9f9;">
+    <h3>Saved Records (History)</h3>
+    <table class="history-table">
         <thead>
-            <tr><th>Date</th><th>Inv #</th><th>Client</th><th>Total</th></tr>
+            <tr><th>Date</th><th>Invoice #</th><th>Total Amount</th></tr>
         </thead>
-        <tbody id="historyBody">
-            </tbody>
+        <tbody id="historyBody"></tbody>
     </table>
+    <button onclick="clearHistory()" style="margin-top:10px; color:red; cursor:pointer; background:none; border:none;">Clear All History</button>
 </div>
 
 <script>
@@ -81,33 +98,39 @@
         document.getElementById('grand').innerText = t.toFixed(2);
     }
 
-    function saveInvoice() {
+    // डेटा सेव करने वाला जादू (Local Storage)
+    function saveToHistory() {
         let record = {
             date: document.getElementById('invDate').value,
             num: document.getElementById('invNum').value,
-            client: document.getElementById('clientDetails').innerText.substring(0, 20),
             total: document.getElementById('grand').innerText
         };
         
-        let history = JSON.parse(localStorage.getItem('invHistory') || "[]");
+        let history = JSON.parse(localStorage.getItem('myInvoices') || "[]");
         history.push(record);
-        localStorage.setItem('invHistory', JSON.stringify(history));
-        loadHistory();
-        alert("Invoice saved to history!");
+        localStorage.setItem('myInvoices', JSON.stringify(history));
+        displayHistory();
+        alert("Data Saved Successfully!");
     }
 
-    function loadHistory() {
-        let history = JSON.parse(localStorage.getItem('invHistory') || "[]");
+    function displayHistory() {
+        let history = JSON.parse(localStorage.getItem('myInvoices') || "[]");
         let html = "";
         history.reverse().forEach(item => {
-            html += <tr><td>${item.date}</td><td>${item.num}</td><td>${item.client}</td><td>₹${item.total}</td></tr>;
+            html += <tr><td>${item.date}</td><td>${item.num}</td><td>₹${item.total}</td></tr>;
         });
         document.getElementById('historyBody').innerHTML = html;
     }
 
-    window.onload = loadHistory;
+    function clearHistory() {
+        if(confirm("Delete all records?")) {
+            localStorage.removeItem('myInvoices');
+            displayHistory();
+        }
+    }
+
+    window.onload = displayHistory;
 </script>
 
 </body>
 </html>
-
