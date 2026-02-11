@@ -2,42 +2,47 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>GoAhead Invoice App</title>
+    <title>GoAhead Freight Invoice</title>
     <style>
         :root { --primary: #0056b3; --success: #28a745; --warning: #ff9800; }
-        body { font-family: 'Segoe UI', sans-serif; background: #eef2f3; padding: 20px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #eef2f3; padding: 20px; color: #333; }
         
-        /* काली पट्टी (Toolbar) */
-        .toolbar { 
-            background: #333; 
-            padding: 15px; 
-            border-radius: 8px; 
-            margin-bottom: 20px; 
-            display: flex; 
-            gap: 15px; 
-            justify-content: center; 
-            position: sticky; 
-            top: 0; 
-            z-index: 1000;
-        }
-
-        .btn { padding: 12px 25px; border: none; border-radius: 5px; color: white; cursor: pointer; font-weight: bold; font-size: 15px; transition: 0.3s; }
+        .toolbar { background: #333; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 15px; justify-content: center; position: sticky; top: 0; z-index: 1000; }
+        .btn { padding: 12px 25px; border: none; border-radius: 5px; color: white; cursor: pointer; font-weight: bold; transition: 0.3s; }
         .btn-add { background: var(--primary); }
-        .btn-save { background: var(--warning); } /* नारंगी बटन */
+        .btn-save { background: var(--warning); }
         .btn-print { background: var(--success); }
 
-        .invoice-card { background: white; padding: 40px; border-radius: 5px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); max-width: 900px; margin: auto; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th { background: #0056b3; color: white; padding: 10px; }
-        td { padding: 10px; border-bottom: 1px solid #ddd; }
-        input { width: 90%; padding: 5px; border: 1px solid #ccc; }
+        .invoice-card { background: white; padding: 50px; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); max-width: 950px; margin: auto; min-height: 1000px; position: relative; }
+        
+        /* Logo Styles */
+        .logo-container { width: 150px; height: 80px; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; overflow: hidden; }
+        .logo-container img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        #logoInput { display: none; }
 
-        /* हिस्ट्री सेक्शन */
-        .history-section { max-width: 900px; margin: 30px auto; background: white; padding: 20px; border-radius: 5px; border: 1px solid #ddd; }
-        .history-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .header { display: flex; justify-content: space-between; border-bottom: 4px solid var(--primary); padding-bottom: 20px; margin-bottom: 30px; margin-top: 20px; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin: 30px 0; }
+        .info-box { border: 1px solid #eee; padding: 15px; border-radius: 5px; background: #fcfcfc; }
+        
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th { background: var(--primary); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px; border-bottom: 1px solid #eee; }
+        input { width: 95%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+
+        .footer-grid { display: flex; justify-content: space-between; margin-top: 40px; }
+        .bank-info { width: 55%; background: #f8fbff; border: 1px solid #dce7f3; padding: 15px; border-radius: 5px; }
+        .calc-box { width: 35%; line-height: 2.2; font-size: 1.1em; }
+        .total-row { border-top: 2px solid var(--primary); font-weight: bold; font-size: 1.3em; color: var(--primary); }
+
+        .history-section { max-width: 950px; margin: 30px auto; background: white; padding: 20px; border-radius: 8px; border: 1px solid #ddd; }
+        .history-table { width: 100%; border-collapse: collapse; }
         .history-table th { background: #555; }
 
-        @media print { .toolbar, .history-section, .btn-del { display: none !important; } }
+        @media print { 
+            .toolbar, .history-section, .btn-del, .logo-container.empty::after { display: none !important; } 
+            .invoice-card { box-shadow: none; border: none; padding: 20px; } 
+            .logo-container { border: none; }
+        }
     </style>
 </head>
 <body>
@@ -49,35 +54,75 @@
 </div>
 
 <div class="invoice-card">
-    <h1 contenteditable="true" id="compName">GOAHEAD LOGISTICS</h1>
-    <div style="display:flex; justify-content:space-between;">
-        <div contenteditable="true">Bill To: Client Name<br>Address Details</div>
+    <div class="logo-container" onclick="document.getElementById('logoInput').click()">
+        <span id="logoText">Upload Logo</span>
+        <img id="logoPreview" src="" style="display:none;">
+    </div>
+    <input type="file" id="logoInput" accept="image/*" onchange="previewLogo(this)">
+
+    <div class="header">
         <div>
-            Date: <input type="date" id="invDate"><br>
-            Invoice #: <input type="text" id="invNum" value="INV-101">
+            <h1 contenteditable="true" id="myCompName" style="margin:0; color:var(--primary);">YOUR COMPANY NAME</h1>
+            <p contenteditable="true">GSTIN: 07XXXXXXXXXXXX<br>Email: contact@company.com</p>
+        </div>
+        <div style="text-align: right;">
+            <h2 style="font-size: 30px; color: #555; margin:0;">TAX INVOICE</h2>
+            <p>Invoice #: <input type="text" id="invNum" value="INV-101" style="width:80px; font-weight:bold;"><br>
+            Date: <input type="date" id="invDate" style="width:130px;"></p>
+        </div>
+    </div>
+
+    <div class="info-grid">
+        <div class="info-box">
+            <strong style="color:var(--primary)">Bill To:</strong>
+            <div contenteditable="true" id="clientName" style="margin-top:10px;">Client Name<br>Address Details<br>GSTIN: 07XXXXX</div>
+        </div>
+        <div class="info-box">
+            <strong style="color:var(--primary)">Shipment Info:</strong>
+            <div contenteditable="true" style="margin-top:10px;">Origin: Delhi | Dest: London<br>AWB: 99887766<br>Pkg: 5 Cases / 400 Kg</div>
         </div>
     </div>
 
     <table>
         <thead>
-            <tr><th>Description</th><th>Amount (₹)</th><th class="btn-del"></th></tr>
+            <tr>
+                <th style="width: 40%;">Service Description</th>
+                <th style="width: 20%;">SAC</th>
+                <th style="width: 20%;">Amount (₹)</th>
+                <th class="btn-del" style="width: 10%;"></th>
+            </tr>
         </thead>
         <tbody id="tbody">
             <tr>
                 <td><input type="text" value="Freight Charges"></td>
+                <td><input type="text" value="9965"></td>
                 <td><input type="number" class="amt" value="0" oninput="calc()"></td>
-                <td class="btn-del"><button onclick="this.parentElement.parentElement.remove();calc()">✖</button></td>
+                <td class="btn-del"><button onclick="this.parentElement.parentElement.remove();calc()" style="color:red; background:none; border:none; cursor:pointer;">✖</button></td>
             </tr>
         </tbody>
     </table>
-    <h2 style="text-align:right;">Total: ₹<span id="grand">0.00</span></h2>
+
+    <div class="footer-grid">
+        <div class="bank-info" contenteditable="true">
+            <strong>Bank Details:</strong><br>
+            Bank: HDFC Bank | A/c: 502000XXXXXX<br>
+            IFSC: HDFC0001234 | Branch: Mumbai
+        </div>
+        <div class="calc-box">
+            <div style="display:flex; justify-content:space-between;"><span>Subtotal:</span> <span id="sub">0.00</span></div>
+            <div style="display:flex; justify-content:space-between;"><span>GST (18%):</span> <span id="tax">0.00</span></div>
+            <div class="total-row">
+                <div style="display:flex; justify-content:space-between;"><span>Total:</span> <span id="grand">0.00</span></div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="history-section">
     <h3>Saved Records (History)</h3>
     <table class="history-table">
         <thead>
-            <tr><th>Date</th><th>Invoice #</th><th>Total Amount</th></tr>
+            <tr><th>Date</th><th>Invoice #</th><th>Client</th><th>Amount</th></tr>
         </thead>
         <tbody id="historyBody"></tbody>
     </table>
@@ -87,50 +132,60 @@
 <script>
     document.getElementById('invDate').valueAsDate = new Date();
 
+    function previewLogo(input) {
+        if (input.files && input.files[0]) {
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('logoPreview').src = e.target.result;
+                document.getElementById('logoPreview').style.display = 'block';
+                document.getElementById('logoText').style.display = 'none';
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
     function addRow() {
         let row = document.getElementById('tbody').insertRow();
-        row.innerHTML = <td><input type="text"></td><td><input type="number" class="amt" value="0" oninput="calc()"></td><td class="btn-del"><button onclick="this.parentElement.parentElement.remove();calc()">✖</button></td>;
+        row.innerHTML = `<td><input type="text" placeholder="Service"></td>
+                         <td><input type="text" placeholder="99xx"></td>
+                         <td><input type="number" class="amt" value="0" oninput="calc()"></td>
+                         <td class="btn-del"><button onclick="this.parentElement.parentElement.remove();calc()" style="color:red; background:none; border:none; cursor:pointer;">✖</button></td>`;
     }
 
     function calc() {
-        let t = 0;
-        document.querySelectorAll('.amt').forEach(i => t += parseFloat(i.value) || 0);
-        document.getElementById('grand').innerText = t.toFixed(2);
+        let sub = 0;
+        document.querySelectorAll('.amt').forEach(i => sub += parseFloat(i.value) || 0);
+        let gst = sub * 0.18;
+        document.getElementById('sub').innerText = sub.toFixed(2);
+        document.getElementById('tax').innerText = gst.toFixed(2);
+        document.getElementById('grand').innerText = (sub + gst).toFixed(2);
     }
 
-    // डेटा सेव करने वाला जादू (Local Storage)
     function saveToHistory() {
         let record = {
             date: document.getElementById('invDate').value,
             num: document.getElementById('invNum').value,
+            client: document.getElementById('clientName').innerText.split('\n')[0],
             total: document.getElementById('grand').innerText
         };
-        
-        let history = JSON.parse(localStorage.getItem('myInvoices') || "[]");
+        let history = JSON.parse(localStorage.getItem('freightLogs') || "[]");
         history.push(record);
-        localStorage.setItem('myInvoices', JSON.stringify(history));
+        localStorage.setItem('freightLogs', JSON.stringify(history));
         displayHistory();
-        alert("Data Saved Successfully!");
+        alert("Invoice Saved Successfully!");
     }
 
     function displayHistory() {
-        let history = JSON.parse(localStorage.getItem('myInvoices') || "[]");
+        let history = JSON.parse(localStorage.getItem('freightLogs') || "[]");
         let html = "";
         history.reverse().forEach(item => {
-            html += <tr><td>${item.date}</td><td>${item.num}</td><td>₹${item.total}</td></tr>;
+            html += <tr><td>${item.date}</td><td>${item.num}</td><td>${item.client}</td><td>₹${item.total}</td></tr>;
         });
         document.getElementById('historyBody').innerHTML = html;
     }
 
-    function clearHistory() {
-        if(confirm("Delete all records?")) {
-            localStorage.removeItem('myInvoices');
-            displayHistory();
-        }
-    }
-
+    function clearHistory() { if(confirm("Clear all data?")) { localStorage.removeItem('freightLogs'); displayHistory(); } }
     window.onload = displayHistory;
 </script>
-
 </body>
 </html>
