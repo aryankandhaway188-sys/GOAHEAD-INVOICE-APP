@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Freight Invoice App - V2</title>
+    <style>
+        :root { --primary: #0056b3; --success: #28a745; }
+        body { font-family: 'Segoe UI', sans-serif; background: #eef2f3; padding: 20px; }
+        .app-container { max-width: 950px; margin: auto; }
+        
+        /* Toolbar */
+        .toolbar { background: #333; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 10px; justify-content: center; position: sticky; top: 10px; z-index: 1000; }
+        .btn { padding: 10px 20px; border: none; border-radius: 4px; color: white; cursor: pointer; font-weight: bold; }
+        .btn-add { background: var(--primary); }
+        .btn-print { background: var(--success); }
+
+        /* Invoice Sheet */
+        .invoice-card { background: white; padding: 50px; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); min-height: 1000px; }
+        .header { display: flex; justify-content: space-between; border-bottom: 4px solid var(--primary); padding-bottom: 20px; }
+        
+        /* Date & Invoice No Styling */
+        .meta-info { text-align: right; line-height: 1.8; }
+        .date-input { border: 1px solid #ddd; padding: 5px; border-radius: 4px; font-family: inherit; font-size: 14px; cursor: pointer; background: #fffde7; }
+        
+        .logo-box { width: 180px; height: 100px; border: 2px dashed #ddd; display: flex; align-items: center; justify-content: center; position: relative; }
+        .logo-box img { max-width: 100%; max-height: 100%; }
+        #fileInput { position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin: 30px 0; }
+        .info-box { border: 1px solid #eee; padding: 15px; border-radius: 5px; background: #fcfcfc; }
+        
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th { background: var(--primary); color: white; padding: 12px; }
+        td { padding: 10px; border-bottom: 1px solid #eee; }
+        input[type="text"], input[type="number"] { width: 95%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+
+        .footer-grid { display: flex; justify-content: space-between; margin-top: 40px; }
+        .bank-info { width: 55%; background: #f8fbff; border: 1px solid #dce7f3; padding: 15px; border-radius: 5px; }
+        .calc-box { width: 35%; line-height: 2.2; }
+        .total-row { border-top: 2px solid var(--primary); font-weight: bold; font-size: 1.2em; color: var(--primary); }
+
+        @media print {
+            .toolbar, .btn-del, .date-input::-webkit-calendar-picker-indicator { display: none !important; }
+            .date-input { border: none !important; background: transparent !important; appearance: none; -moz-appearance: none; }
+            body { padding: 0; background: white; }
+            .invoice-card { box-shadow: none; padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div class="toolbar">
+        <button class="btn btn-add" onclick="addRow()">+ Add New Service</button>
+        <button class="btn btn-print" onclick="window.print()">Print / Save PDF</button>
+    </div>
+
+    <div class="invoice-card">
+        <div class="header">
+            <div>
+                <div class="logo-box">
+                    <span id="uploadText">Upload Logo</span>
+                    <input type="file" id="fileInput" accept="image/*" onchange="previewLogo(this)">
+                    <img id="logoPreview" src="" style="display:none;">
+                </div>
+                <h1 contenteditable="true" style="margin:15px 0 5px 0; color:var(--primary);">YOUR COMPANY NAME</h1>
+                <p contenteditable="true">GSTIN: 07XXXXXXXXXXXX</p>
+            </div>
+            <div class="meta-info">
+                <h2 style="font-size: 28px; margin:0; color: #444;">TAX INVOICE</h2>
+                <p>Invoice #: <span contenteditable="true" style="font-weight:bold; background:#fffde7; padding:2px 5px;">INV-101</span></p>
+                <p>Date: <input type="date" id="invDate" class="date-input"></p>
+            </div>
+        </div>
+
+        <div class="info-grid">
+            <div class="info-box">
+                <strong style="color:var(--primary)">Bill To:</strong>
+                <div contenteditable="true" style="margin-top:10px;">Client Name<br>Address Details<br>GSTIN: 07XXXXX</div>
+            </div>
+            <div class="info-box">
+                <strong style="color:var(--primary)">Shipment Info:</strong>
+                <div contenteditable="true" style="margin-top:10px;">Origin: Delhi<br>Dest: London<br>AWB: 99887766</div>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Service Description</th>
+                    <th>SAC</th>
+                    <th>Amount (₹)</th>
+                    <th class="btn-del"></th>
+                </tr>
+            </thead>
+            <tbody id="tbody">
+                <tr>
+                    <td><input type="text" value="Freight Charges"></td>
+                    <td><input type="text" value="9965"></td>
+                    <td><input type="number" class="amt" value="0" oninput="calc()"></td>
+                    <td class="btn-del"><button onclick="this.parentElement.parentElement.remove();calc()" style="color:red; border:none; background:none; cursor:pointer;">✖</button></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="footer-grid">
+            <div class="bank-info" contenteditable="true">
+                <strong>Bank Details:</strong><br>
+                A/c Name: YOUR COMPANY NAME<br>
+                A/c No: 502000XXXXXX<br>
+                IFSC: HDFC0001234
+            </div>
+            <div class="calc-box">
+                <div style="display:flex; justify-content:space-between;"><span>Subtotal:</span> <span id="sub">0.00</span></div>
+                <div style="display:flex; justify-content:space-between;"><span>CGST (9%):</span> <span id="cg">0.00</span></div>
+                <div style="display:flex; justify-content:space-between;"><span>SGST (9%):</span> <span id="sg">0.00</span></div>
+                <div class="total-row">
+                    <div style="display:flex; justify-content:space-between;"><span>Grand Total:</span> <span id="grand">0.00</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // आज की डेट सेट करना
+    document.getElementById('invDate').valueAsDate = new Date();
+
+    function previewLogo(input) {
+        if (input.files && input.files[0]) {
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('logoPreview').src = e.target.result;
+                document.getElementById('logoPreview').style.display = 'block';
+                document.getElementById('uploadText').style.display = 'none';
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function addRow() {
+        let row = document.getElementById('tbody').insertRow();
+        row.innerHTML = `<td><input type="text" placeholder="Service Name"></td>
+                         <td><input type="text" placeholder="99xx"></td>
+                         <td><input type="number" class="amt" value="0" oninput="calc()"></td>
+                         <td class="btn-del"><button onclick="this.parentElement.parentElement.remove();calc()" style="color:red; border:none; background:none; cursor:pointer;">✖</button></td>`;
+    }
+
+    function calc() {
+        let sub = 0;
+        document.querySelectorAll('.amt').forEach(i => sub += parseFloat(i.value) || 0);
+        let tax = sub * 0.09;
+        document.getElementById('sub').innerText = sub.toFixed(2);
+        document.getElementById('cg').innerText = tax.toFixed(2);
+        document.getElementById('sg').innerText = tax.toFixed(2);
+        document.getElementById('grand').innerText = (sub + tax + tax).toFixed(2);
+    }
+</script>
+
+</body>
+</html>
