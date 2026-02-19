@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+[1:20 PM, 2/19/2026] 🇮🇳GOAHEAD WORLDWIDE🇮🇳: <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -14,28 +14,77 @@
         <div class="grid grid-cols-2 gap-4 mb-6">
             <input id="shipper" type="text" placeholder="Shipper Name" class="border p-2 rounded">
             <input id="consignee" type="text" placeholder="Consignee Name" class="border p-2 rounded">
-            <input id="container" type="text" placeholder="Container Number" class="border p-2 rounded">
-            <input id="hbl" type="text" placeholder="HBL / Bill of Lading No." class="border p-2 rounded">
-            <input id="freight" type="number" placeholder="Ocean Freight (INR)" class="border p-2 rounded">
-            <input id="local" type="number" placeholder="Local Charges (INR)" class="border p-2 rounded">
+            <input id="co…
+[1:22 PM, 2/19/2026] 🇮🇳GOAHEAD WORLDWIDE🇮🇳: <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Freight Invoice App</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 p-4 md:p-10">
+
+    <div class="max-w-5xl mx-auto bg-white p-8 rounded-xl shadow-2xl border border-gray-200">
+        <div class="flex justify-between items-center border-b pb-4 mb-6">
+            <h1 class="text-3xl font-extrabold text-slate-800">Freight <span class="text-blue-600">Pro</span></h1>
+            <div class="text-right">
+                <p class="text-sm text-gray-500">Invoice Management System</p>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="space-y-2">
+                <label class="text-sm font-semibold text-gray-600">Logo URL (Optional)</label>
+                <input id="logoUrl" type="text" placeholder="https://logo-link.com" class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none">
+            </div>
+            <div class="space-y-2">
+                <label class="text-sm font-semibold text-gray-600">Shipper Name</label>
+                <input id="shipper" type="text" placeholder="ABC Exports" class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none">
+            </div>
+            <div class="space-y-2">
+                <label class="text-sm font-semibold text-gray-600">Consignee Name</label>
+                <input id="consignee" type="text" placeholder="XYZ Global Inc" class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none">
+            </div>
+            <div class="space-y-2">
+                <label class="text-sm font-semibold text-gray-600">Container No.</label>
+                <input id="container" type="text" placeholder="MSCU1234567" class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none">
+            </div>
+            <div class="space-y-2">
+                <label class="text-sm font-semibold text-gray-600">Freight (INR)</label>
+                <input id="freight" type="number" placeholder="50000" class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none">
+            </div>
+            <div class="space-y-2">
+                <label class="text-sm font-semibold text-gray-600">Local Charges (INR)</label>
+                <input id="local" type="number" placeholder="5000" class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none">
+            </div>
         </div>
 
-        <button onclick="saveInvoice()" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">Save & Download PDF</button>
+        <div class="flex gap-4">
+            <button onclick="saveAndProcess()" class="flex-1 bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition duration-200 shadow-md">
+                Generate, Save & Download
+            </button>
+            <button onclick="clearHistory()" class="bg-red-50 text-red-600 border border-red-200 px-4 py-2 rounded-lg hover:bg-red-100 transition">
+                Clear History
+            </button>
+        </div>
 
-        <hr class="my-8">
+        <hr class="my-10">
 
-        <h2 class="text-xl font-semibold mb-4">Saved Invoices (History)</h2>
-        <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
-                <thead>
-                    <tr class="bg-gray-200">
-                        <th class="p-2 border">Shipper</th>
-                        <th class="p-2 border">Container</th>
-                        <th class="p-2 border">Total Amount</th>
-                        <th class="p-2 border">Action</th>
+        <h2 class="text-2xl font-bold mb-4 text-slate-700">Recent Invoices</h2>
+        <div class="overflow-hidden border rounded-lg shadow-sm">
+            <table class="w-full text-left">
+                <thead class="bg-slate-100">
+                    <tr>
+                        <th class="p-4 font-semibold text-gray-700">Date</th>
+                        <th class="p-4 font-semibold text-gray-700">Shipper</th>
+                        <th class="p-4 font-semibold text-gray-700">Container</th>
+                        <th class="p-4 font-semibold text-gray-700">Total (Inc. GST)</th>
+                        <th class="p-4 font-semibold text-gray-700 text-center">Action</th>
                     </tr>
                 </thead>
-                <tbody id="historyTable">
+                <tbody id="historyTable" class="divide-y">
                     </tbody>
             </table>
         </div>
@@ -43,74 +92,118 @@
 
     <script>
         const { jsPDF } = window.jspdf;
-
-        // Load Data on Startup
         window.onload = displayHistory;
 
-        function saveInvoice() {
-            const invoiceData = {
+        function saveAndProcess() {
+            const f = parseFloat(document.getElementById('freight').value || 0);
+            const l = parseFloat(document.getElementById('local').value || 0);
+            const subtotal = f + l;
+            const gst = subtotal * 0.18;
+            const total = subtotal + gst;
+
+            const data = {
+                logo: document.getElementById('logoUrl').value,
                 shipper: document.getElementById('shipper').value,
                 consignee: document.getElementById('consignee').value,
                 container: document.getElementById('container').value,
-                hbl: document.getElementById('hbl').value,
-                freight: document.getElementById('freight').value || 0,
-                local: document.getElementById('local').value || 0,
-                total: parseFloat(document.getElementById('freight').value || 0) + parseFloat(document.getElementById('local').value || 0),
+                freight: f,
+                local: l,
+                gst: gst.toFixed(2),
+                total: total.toFixed(2),
                 date: new Date().toLocaleDateString()
             };
 
-            if(!invoiceData.shipper) return alert("Please enter Shipper Name");
+            if(!data.shipper || !data.container) return alert("Please fill Shipper Name and Container Number");
 
             // Save to LocalStorage
-            let invoices = JSON.parse(localStorage.getItem('myInvoices') || "[]");
-            invoices.push(invoiceData);
-            localStorage.setItem('myInvoices', JSON.stringify(invoices));
+            let history = JSON.parse(localStorage.getItem('freightLogs') || "[]");
+            history.unshift(data);
+            localStorage.setItem('freightLogs', JSON.stringify(history));
 
-            generatePDF(invoiceData);
+            generatePDF(data);
             displayHistory();
         }
 
-        function generatePDF(data) {
+        function generatePDF(d) {
             const doc = new jsPDF();
-            doc.setFontSize(20);
-            doc.text("FREIGHT INVOICE", 105, 20, { align: 'center' });
             
+            // Header Color
+            doc.setFillColor(41, 128, 185);
+            doc.rect(0, 0, 210, 40, 'F');
+            
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(22);
+            doc.text("FREIGHT INVOICE", 105, 25, { align: 'center' });
+
+            doc.setTextColor(0, 0, 0);
             doc.setFontSize(12);
-            doc.text(Date: ${data.date}, 20, 40);
-            doc.text(Shipper: ${data.shipper}, 20, 50);
-            doc.text(Consignee: ${data.consignee}, 20, 60);
-            doc.text(Container No: ${data.container}, 20, 70);
-            doc.text(HBL No: ${data.hbl}, 20, 80);
+            doc.text(Date: ${d.date}, 150, 50);
+            doc.setFont("helvetica", "bold");
+            doc.text("SHIPPER:", 20, 65);
+            doc.setFont("helvetica", "normal");
+            doc.text(d.shipper, 20, 72);
+
+            doc.setFont("helvetica", "bold");
+            doc.text("CONSIGNEE:", 20, 85);
+            doc.setFont("helvetica", "normal");
+            doc.text(d.consignee, 20, 92);
+
+            doc.text(Container No: ${d.container}, 20, 105);
+
+            // Table Header
+            doc.setDrawColor(200, 200, 200);
+            doc.line(20, 115, 190, 115);
+            doc.setFont("helvetica", "bold");
+            doc.text("Description", 25, 122);
+            doc.text("Amount (INR)", 150, 122);
+            doc.line(20, 126, 190, 126);
+
+            // Items
+            doc.setFont("helvetica", "normal");
+            doc.text("Ocean Freight Charges", 25, 135);
+            doc.text(d.freight.toString(), 150, 135);
             
-            doc.line(20, 90, 190, 90);
-            doc.text(Ocean Freight: INR ${data.freight}, 20, 100);
-            doc.text(Local Charges: INR ${data.local}, 20, 110);
+            doc.text("Local Handling Charges", 25, 145);
+            doc.text(d.local.toString(), 150, 145);
+
+            doc.line(130, 155, 190, 155);
+            doc.text("GST (18%):", 110, 165);
+            doc.text(d.gst.toString(), 150, 165);
+
             doc.setFontSize(14);
-            doc.text(TOTAL AMOUNT: INR ${data.total}, 20, 130);
-            
-            doc.save(Invoice_${data.container}.pdf);
+            doc.setFont("helvetica", "bold");
+            doc.text("GRAND TOTAL:", 100, 180);
+            doc.text(INR ${d.total}, 150, 180);
+
+            doc.save(Invoice_${d.container}.pdf);
         }
 
         function displayHistory() {
-            let invoices = JSON.parse(localStorage.getItem('myInvoices') || "[]");
+            let history = JSON.parse(localStorage.getItem('freightLogs') || "[]");
             const table = document.getElementById('historyTable');
-            table.innerHTML = "";
-
-            invoices.reverse().forEach((inv, index) => {
-                table.innerHTML += `
-                    <tr>
-                        <td class="p-2 border">${inv.shipper}</td>
-                        <td class="p-2 border">${inv.container}</td>
-                        <td class="p-2 border">₹${inv.total}</td>
-                        <td class="p-2 border text-blue-500 cursor-pointer" onclick="downloadAgain(${index})">Download</td>
-                    </tr>
-                `;
-            });
+            table.innerHTML = history.map((inv, idx) => `
+                <tr class="hover:bg-blue-50 transition">
+                    <td class="p-4 text-sm text-gray-600">${inv.date}</td>
+                    <td class="p-4 font-medium text-gray-800">${inv.shipper}</td>
+                    <td class="p-4 text-gray-600">${inv.container}</td>
+                    <td class="p-4 font-bold text-blue-600">₹${inv.total}</td>
+                    <td class="p-4 text-center">
+                        <button onclick="downloadHistory(${idx})" class="text-sm bg-gray-800 text-white px-3 py-1 rounded hover:bg-black">PDF</button>
+                    </td>
+                </tr>
+            `).join('');
         }
 
-        function downloadAgain(index) {
-            let invoices = JSON.parse(localStorage.getItem('myInvoices') || "[]").reverse();
-            generatePDF(invoices[index]);
+        function downloadHistory(i) {
+            let history = JSON.parse(localStorage.getItem('freightLogs'));
+            generatePDF(history[i]);
+        }
+
+        function clearHistory() {
+            if(confirm("Sura data delete ho jayega. Confirm?")) {
+                localStorage.removeItem('freightLogs');
+                displayHistory();
+            }
         }
     </script>
 </body>
