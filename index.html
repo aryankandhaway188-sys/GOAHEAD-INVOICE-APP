@@ -2,190 +2,116 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>GoAhead Freight Invoice</title>
-    <style>
-        :root { --primary: #0056b3; --success: #28a745; --warning: #ff9800; }
-        body { font-family: 'Segoe UI', sans-serif; background: #eef2f3; padding: 20px; color: #333; }
-        
-        .toolbar { background: #333; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 15px; justify-content: center; position: sticky; top: 0; z-index: 1000; }
-        .btn { padding: 12px 25px; border: none; border-radius: 5px; color: white; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        .btn-add { background: var(--primary); }
-        .btn-save { background: var(--warning); }
-        .btn-print { background: var(--success); }
-
-        .invoice-card { background: white; padding: 50px; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); max-width: 950px; margin: auto; min-height: 1000px; position: relative; }
-        
-        /* Logo Styles */
-        .logo-container { width: 150px; height: 80px; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; overflow: hidden; }
-        .logo-container img { max-width: 100%; max-height: 100%; object-fit: contain; }
-        #logoInput { display: none; }
-
-        .header { display: flex; justify-content: space-between; border-bottom: 4px solid var(--primary); padding-bottom: 20px; margin-bottom: 30px; margin-top: 20px; }
-        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin: 30px 0; }
-        .info-box { border: 1px solid #eee; padding: 15px; border-radius: 5px; background: #fcfcfc; }
-        
-        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-        th { background: var(--primary); color: white; padding: 12px; text-align: left; }
-        td { padding: 10px; border-bottom: 1px solid #eee; }
-        input { width: 95%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
-
-        .footer-grid { display: flex; justify-content: space-between; margin-top: 40px; }
-        .bank-info { width: 55%; background: #f8fbff; border: 1px solid #dce7f3; padding: 15px; border-radius: 5px; }
-        .calc-box { width: 35%; line-height: 2.2; font-size: 1.1em; }
-        .total-row { border-top: 2px solid var(--primary); font-weight: bold; font-size: 1.3em; color: var(--primary); }
-
-        .history-section { max-width: 950px; margin: 30px auto; background: white; padding: 20px; border-radius: 8px; border: 1px solid #ddd; }
-        .history-table { width: 100%; border-collapse: collapse; }
-        .history-table th { background: #555; }
-
-        @media print { 
-            .toolbar, .history-section, .btn-del, .logo-container.empty::after { display: none !important; } 
-            .invoice-card { box-shadow: none; border: none; padding: 20px; } 
-            .logo-container { border: none; }
-        }
-    </style>
+    <title>Freight Forwarding Invoice App</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
+<body class="bg-gray-100 p-5">
 
-<div class="toolbar">
-    <button class="btn btn-add" onclick="addRow()">+ Add New Service</button>
-    <button class="btn btn-save" onclick="saveToHistory()">💾 Save to History</button>
-    <button class="btn btn-print" onclick="window.print()">Print / Save PDF</button>
-</div>
-
-<div class="invoice-card">
-    <div class="logo-container" onclick="document.getElementById('logoInput').click()">
-        <span id="logoText">Upload Logo</span>
-        <img id="logoPreview" src="" style="display:none;">
-    </div>
-    <input type="file" id="logoInput" accept="image/*" onchange="previewLogo(this)">
-
-    <div class="header">
-        <div>
-            <h1 contenteditable="true" id="myCompName" style="margin:0; color:var(--primary);">YOUR COMPANY NAME</h1>
-            <p contenteditable="true">GSTIN: 07XXXXXXXXXXXX<br>Email: contact@company.com</p>
+    <div class="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-lg">
+        <h1 class="text-2xl font-bold mb-6 text-blue-600 border-b pb-2">Freight Invoice Generator</h1>
+        
+        <div class="grid grid-cols-2 gap-4 mb-6">
+            <input id="shipper" type="text" placeholder="Shipper Name" class="border p-2 rounded">
+            <input id="consignee" type="text" placeholder="Consignee Name" class="border p-2 rounded">
+            <input id="container" type="text" placeholder="Container Number" class="border p-2 rounded">
+            <input id="hbl" type="text" placeholder="HBL / Bill of Lading No." class="border p-2 rounded">
+            <input id="freight" type="number" placeholder="Ocean Freight (INR)" class="border p-2 rounded">
+            <input id="local" type="number" placeholder="Local Charges (INR)" class="border p-2 rounded">
         </div>
-        <div style="text-align: right;">
-            <h2 style="font-size: 30px; color: #555; margin:0;">TAX INVOICE</h2>
-            <p>Invoice #: <input type="text" id="invNum" value="INV-101" style="width:80px; font-weight:bold;"><br>
-            Date: <input type="date" id="invDate" style="width:130px;"></p>
-        </div>
-    </div>
 
-    <div class="info-grid">
-        <div class="info-box">
-            <strong style="color:var(--primary)">Bill To:</strong>
-            <div contenteditable="true" id="clientName" style="margin-top:10px;">Client Name<br>Address Details<br>GSTIN: 07XXXXX</div>
-        </div>
-        <div class="info-box">
-            <strong style="color:var(--primary)">Shipment Info:</strong>
-            <div contenteditable="true" style="margin-top:10px;">Origin: Delhi | Dest: London<br>AWB: 99887766<br>Pkg: 5 Cases / 400 Kg</div>
+        <button onclick="saveInvoice()" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">Save & Download PDF</button>
+
+        <hr class="my-8">
+
+        <h2 class="text-xl font-semibold mb-4">Saved Invoices (History)</h2>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-gray-200">
+                        <th class="p-2 border">Shipper</th>
+                        <th class="p-2 border">Container</th>
+                        <th class="p-2 border">Total Amount</th>
+                        <th class="p-2 border">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="historyTable">
+                    </tbody>
+            </table>
         </div>
     </div>
 
-    <table>
-        <thead>
-            <tr>
-                <th style="width: 40%;">Service Description</th>
-                <th style="width: 20%;">SAC</th>
-                <th style="width: 20%;">Amount (₹)</th>
-                <th class="btn-del" style="width: 10%;"></th>
-            </tr>
-        </thead>
-        <tbody id="tbody">
-            <tr>
-                <td><input type="text" value="Freight Charges"></td>
-                <td><input type="text" value="9965"></td>
-                <td><input type="number" class="amt" value="0" oninput="calc()"></td>
-                <td class="btn-del"><button onclick="this.parentElement.parentElement.remove();calc()" style="color:red; background:none; border:none; cursor:pointer;">✖</button></td>
-            </tr>
-        </tbody>
-    </table>
+    <script>
+        const { jsPDF } = window.jspdf;
 
-    <div class="footer-grid">
-        <div class="bank-info" contenteditable="true">
-            <strong>Bank Details:</strong><br>
-            Bank: HDFC Bank | A/c: 502000XXXXXX<br>
-            IFSC: HDFC0001234 | Branch: Mumbai
-        </div>
-        <div class="calc-box">
-            <div style="display:flex; justify-content:space-between;"><span>Subtotal:</span> <span id="sub">0.00</span></div>
-            <div style="display:flex; justify-content:space-between;"><span>GST (18%):</span> <span id="tax">0.00</span></div>
-            <div class="total-row">
-                <div style="display:flex; justify-content:space-between;"><span>Total:</span> <span id="grand">0.00</span></div>
-            </div>
-        </div>
-    </div>
-</div>
+        // Load Data on Startup
+        window.onload = displayHistory;
 
-<div class="history-section">
-    <h3>Saved Records (History)</h3>
-    <table class="history-table">
-        <thead>
-            <tr><th>Date</th><th>Invoice #</th><th>Client</th><th>Amount</th></tr>
-        </thead>
-        <tbody id="historyBody"></tbody>
-    </table>
-    <button onclick="clearHistory()" style="margin-top:10px; color:red; cursor:pointer; background:none; border:none;">Clear All History</button>
-</div>
-
-<script>
-    document.getElementById('invDate').valueAsDate = new Date();
-
-    function previewLogo(input) {
-        if (input.files && input.files[0]) {
-            var reader = new FileReader();
-            reader.onload = function(e) {
-                document.getElementById('logoPreview').src = e.target.result;
-                document.getElementById('logoPreview').style.display = 'block';
-                document.getElementById('logoText').style.display = 'none';
+        function saveInvoice() {
+            const invoiceData = {
+                shipper: document.getElementById('shipper').value,
+                consignee: document.getElementById('consignee').value,
+                container: document.getElementById('container').value,
+                hbl: document.getElementById('hbl').value,
+                freight: document.getElementById('freight').value || 0,
+                local: document.getElementById('local').value || 0,
+                total: parseFloat(document.getElementById('freight').value || 0) + parseFloat(document.getElementById('local').value || 0),
+                date: new Date().toLocaleDateString()
             };
-            reader.readAsDataURL(input.files[0]);
+
+            if(!invoiceData.shipper) return alert("Please enter Shipper Name");
+
+            // Save to LocalStorage
+            let invoices = JSON.parse(localStorage.getItem('myInvoices') || "[]");
+            invoices.push(invoiceData);
+            localStorage.setItem('myInvoices', JSON.stringify(invoices));
+
+            generatePDF(invoiceData);
+            displayHistory();
         }
-    }
 
-    function addRow() {
-        let row = document.getElementById('tbody').insertRow();
-        row.innerHTML = `<td><input type="text" placeholder="Service"></td>
-                         <td><input type="text" placeholder="99xx"></td>
-                         <td><input type="number" class="amt" value="0" oninput="calc()"></td>
-                         <td class="btn-del"><button onclick="this.parentElement.parentElement.remove();calc()" style="color:red; background:none; border:none; cursor:pointer;">✖</button></td>`;
-    }
+        function generatePDF(data) {
+            const doc = new jsPDF();
+            doc.setFontSize(20);
+            doc.text("FREIGHT INVOICE", 105, 20, { align: 'center' });
+            
+            doc.setFontSize(12);
+            doc.text(Date: ${data.date}, 20, 40);
+            doc.text(Shipper: ${data.shipper}, 20, 50);
+            doc.text(Consignee: ${data.consignee}, 20, 60);
+            doc.text(Container No: ${data.container}, 20, 70);
+            doc.text(HBL No: ${data.hbl}, 20, 80);
+            
+            doc.line(20, 90, 190, 90);
+            doc.text(Ocean Freight: INR ${data.freight}, 20, 100);
+            doc.text(Local Charges: INR ${data.local}, 20, 110);
+            doc.setFontSize(14);
+            doc.text(TOTAL AMOUNT: INR ${data.total}, 20, 130);
+            
+            doc.save(Invoice_${data.container}.pdf);
+        }
 
-    function calc() {
-        let sub = 0;
-        document.querySelectorAll('.amt').forEach(i => sub += parseFloat(i.value) || 0);
-        let gst = sub * 0.18;
-        document.getElementById('sub').innerText = sub.toFixed(2);
-        document.getElementById('tax').innerText = gst.toFixed(2);
-        document.getElementById('grand').innerText = (sub + gst).toFixed(2);
-    }
+        function displayHistory() {
+            let invoices = JSON.parse(localStorage.getItem('myInvoices') || "[]");
+            const table = document.getElementById('historyTable');
+            table.innerHTML = "";
 
-    function saveToHistory() {
-        let record = {
-            date: document.getElementById('invDate').value,
-            num: document.getElementById('invNum').value,
-            client: document.getElementById('clientName').innerText.split('\n')[0],
-            total: document.getElementById('grand').innerText
-        };
-        let history = JSON.parse(localStorage.getItem('freightLogs') || "[]");
-        history.push(record);
-        localStorage.setItem('freightLogs', JSON.stringify(history));
-        displayHistory();
-        alert("Invoice Saved Successfully!");
-    }
+            invoices.reverse().forEach((inv, index) => {
+                table.innerHTML += `
+                    <tr>
+                        <td class="p-2 border">${inv.shipper}</td>
+                        <td class="p-2 border">${inv.container}</td>
+                        <td class="p-2 border">₹${inv.total}</td>
+                        <td class="p-2 border text-blue-500 cursor-pointer" onclick="downloadAgain(${index})">Download</td>
+                    </tr>
+                `;
+            });
+        }
 
-    function displayHistory() {
-        let history = JSON.parse(localStorage.getItem('freightLogs') || "[]");
-        let html = "";
-        history.reverse().forEach(item => {
-            html += <tr><td>${item.date}</td><td>${item.num}</td><td>${item.client}</td><td>₹${item.total}</td></tr>;
-        });
-        document.getElementById('historyBody').innerHTML = html;
-    }
-
-    function clearHistory() { if(confirm("Clear all data?")) { localStorage.removeItem('freightLogs'); displayHistory(); } }
-    window.onload = displayHistory;
-</script>
+        function downloadAgain(index) {
+            let invoices = JSON.parse(localStorage.getItem('myInvoices') || "[]").reverse();
+            generatePDF(invoices[index]);
+        }
+    </script>
 </body>
 </html>
